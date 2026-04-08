@@ -52,7 +52,6 @@ public static class IncrementCurrencyGained {
    public static void Prefix(decimal amount, Player player, bool wasStolenBack = false) {
       MainFile.CurrencyGained += (double)amount * (1 + MyModConfig.CurrentValueCurrencyGain / 100);
    }
-   
 }
 
 [HarmonyPatch(typeof(AchievementsHelper), "AfterRunEnded")]
@@ -96,7 +95,6 @@ internal class MyModConfig : SimpleModConfig {
    /// SLIDERS
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    public static int CurrentLevelStartGold { get; set; }
-
    [SliderRange(0.0, 1000.0)] public static double CurrentValueStartGold { get; set; }
 
    public static int CurrentLevelCurrencyGain { get; set; }

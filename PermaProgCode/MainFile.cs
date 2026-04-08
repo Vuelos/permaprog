@@ -38,6 +38,7 @@ public static class ApplyDataAtStartOfRun {
    // ReSharper disable once InconsistentNaming
    public static void Postfix(Player __instance) {
       __instance.Gold += (int)MyModConfig.CurrentValueStartGold;
+      __instance.Creature.SetMaxHpInternal(__instance.Creature.MaxHp + (int)MyModConfig.CurrentValueMaxHealth);
    }
 }
 
@@ -88,6 +89,10 @@ internal class MyModConfig : SimpleModConfig {
       CreateSlider(MainFile.Upgrades.CurrencyGain);
       _optionContainer.AddChild(CreateButton(nameof(UpgradeButtonCurrencyGain), "Cost", UpgradeButtonCurrencyGain));
       _optionContainer.AddChild(CreateDividerControl());
+      
+      CreateSlider(MainFile.Upgrades.MaxHealth);
+      _optionContainer.AddChild(CreateButton(nameof(UpgradeButtonMaxHealth), "Cost", UpgradeButtonMaxHealth));
+      _optionContainer.AddChild(CreateDividerControl());
 
       UpdateUi();
    }
@@ -99,6 +104,9 @@ internal class MyModConfig : SimpleModConfig {
 
    public static int CurrentLevelCurrencyGain { get; set; }
    [SliderRange(0.0, 1000.0)] public static double CurrentValueCurrencyGain { get; set; }
+   
+   public static int CurrentLevelMaxHealth { get; set; }
+   [SliderRange(0.0, 1000.0)] public static double CurrentValueMaxHealth { get; set; }
    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
    /// BUTTONS
@@ -110,6 +118,11 @@ internal class MyModConfig : SimpleModConfig {
 
    public static void UpgradeButtonCurrencyGain() {
       if (UpgradeButtonPressed(MainFile.Upgrades.CurrencyGain)) CurrentLevelCurrencyGain++;
+      UpdateUi();
+   }
+
+   public static void UpgradeButtonMaxHealth() {
+      if (UpgradeButtonPressed(MainFile.Upgrades.MaxHealth)) CurrentLevelMaxHealth++;
       UpdateUi();
    }
 
@@ -139,6 +152,7 @@ internal class MyModConfig : SimpleModConfig {
    private static void UpdateCurrentValues() {
       MainFile.Upgrades.StartGold.CurrentLevel = CurrentLevelStartGold;
       MainFile.Upgrades.CurrencyGain.CurrentLevel = CurrentLevelCurrencyGain;
+      MainFile.Upgrades.MaxHealth.CurrentLevel = CurrentLevelMaxHealth;
    }
 
    private static void UpdateCurrencyHeader() {
@@ -216,6 +230,7 @@ public class UpgDataContainer {
    public readonly List<Upgradeable> All;
    public readonly Upgradeable StartGold = new();
    public readonly Upgradeable CurrencyGain = new();
+   public readonly Upgradeable MaxHealth = new();
 
    public UpgDataContainer() {
       {
@@ -229,8 +244,14 @@ public class UpgDataContainer {
          CurrencyGain.Vals = [0, 10, 20, 30, 40, 50];
          CurrencyGain.UpgCosts = [100, 300, 500, 700, 900];
       }
+      
+      {
+         MaxHealth.MaxLevel = 5;
+         MaxHealth.Vals = [0, 1, 2, 3, 4, 5];
+         MaxHealth.UpgCosts = [100, 300, 500, 700, 900];
+      }
 
-      All = [StartGold, CurrencyGain];
+      All = [StartGold, CurrencyGain, MaxHealth];
       SetNames();
    }
 
@@ -240,5 +261,8 @@ public class UpgDataContainer {
 
       CurrencyGain.SliderName = nameof(MyModConfig.CurrentValueCurrencyGain);
       CurrencyGain.ButtonName = nameof(MyModConfig.UpgradeButtonCurrencyGain);
+      
+      MaxHealth.SliderName = nameof(MyModConfig.CurrentValueMaxHealth);
+      MaxHealth.ButtonName = nameof(MyModConfig.UpgradeButtonMaxHealth);
    }
 }

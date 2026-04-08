@@ -1,0 +1,8 @@
+﻿1) Slider
+2) Button function name
+3) new Upgradeable in UpgContainer (remember to include in 'All')
+4) finish button function
+5) entry in UpdateCurrentValues()
+6) entry in SetupConfigUI()
+7) entry in settings_ui.json
+8) figure out how to apply it :)

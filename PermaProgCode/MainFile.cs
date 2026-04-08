@@ -42,11 +42,8 @@ public static class ApplyDataAtStartOfRun {
    }
 }
 
-/// <summary>
 /// There is 100% a variable available for this... I haven't found it yet though.
-/// This makeshift solution will do for now
 /// (CurrentMapPointHistoryEntry.GoldGained only gave me latest gold received, not total)
-/// </summary>
 [HarmonyPatch(typeof(PlayerCmd), "GainGold")]
 public static class IncrementCurrencyGained {
    [HarmonyPrefix]
@@ -65,14 +62,12 @@ public static class SaveDataAtEndOfRun {
    }
 }
 
-/// <summary>
-/// Mod Config UI
-/// </summary>
 internal class MyModConfig : SimpleModConfig {
    private static Control? _optionContainer;
    public static int CurrencyAvailable { get; set; }
    public static string CurrencyText { get; set; } = "0";
 
+   //UI GENERATION//////////////////////////////////////////////////////////////////////////////////////////////////////
    public override void SetupConfigUI(Control optionContainer) {
       _optionContainer = optionContainer;
       AddRestoreDefaultsButton(_optionContainer);
@@ -89,10 +84,12 @@ internal class MyModConfig : SimpleModConfig {
       CreateSlider(MainFile.Upgrades.CurrencyGain);
       _optionContainer.AddChild(CreateButton(nameof(UpgradeButtonCurrencyGain), "Cost", UpgradeButtonCurrencyGain));
       _optionContainer.AddChild(CreateDividerControl());
-
-      Tier2Upgrades(optionContainer);
-      Tier3Upgrades(optionContainer);
       
+      // First UpdateUi is necessary for logic (need up-to-date values). The rest refresh after new elements are added.
+      UpdateUi();
+      Tier2Upgrades(optionContainer);
+      UpdateUi(); 
+      Tier3Upgrades(optionContainer);
       UpdateUi();
    }
 
@@ -123,11 +120,10 @@ internal class MyModConfig : SimpleModConfig {
             break;
       }
    }
+   //END OF UI GENERATION///////////////////////////////////////////////////////////////////////////////////////////////
 
-   /// SLIDERS
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   //SLIDERS////////////////////////////////////////////////////////////////////////////////////////////////////////////
    public static int CurrentLevelStartGold { get; set; }
-
    [SliderRange(0.0, 1000.0)] public static double CurrentValueStartGold { get; set; }
 
    public static int CurrentLevelCurrencyGain { get; set; }
@@ -135,10 +131,9 @@ internal class MyModConfig : SimpleModConfig {
 
    public static int CurrentLevelMaxHealth { get; set; }
    [SliderRange(0.0, 1000.0)] public static double CurrentValueMaxHealth { get; set; }
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   //END OF SLIDERS/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   /// BUTTONS
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   //BUTTONS////////////////////////////////////////////////////////////////////////////////////////////////////////////
    public static void UpgradeButtonStartGold() {
       if (UpgradeButtonPressed(MainFile.Upgrades.StartGold)) CurrentLevelStartGold++;
       UpdateUi();
@@ -158,10 +153,9 @@ internal class MyModConfig : SimpleModConfig {
       CurrencyAvailable += 500;
       UpdateUi();
    }
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   //END OF BUTTONS/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-   /// HELPER FUNCTIONS
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   //HELPER FUNCTIONS///////////////////////////////////////////////////////////////////////////////////////////////////
    private static bool UpgradeButtonPressed(Upgradeable upg) {
       if (upg.CurrentLevel > upg.MaxLevel - 1) return false;
       if (upg.UpgCosts[upg.CurrentLevel] > CurrencyAvailable) return false;
@@ -244,11 +238,10 @@ internal class MyModConfig : SimpleModConfig {
       var tmpPropertyInfo = ConfigProperties.Find(x => x.Name == upg.SliderName);
       if (tmpPropertyInfo != null) _optionContainer?.AddChild(CreateSliderOption(tmpPropertyInfo));
    }
-   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-} // End of MyModConfig
+   //END OF HELPER FUNCTIONS////////////////////////////////////////////////////////////////////////////////////////////
+}
 
-/// UPGRADE DATA
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//UPGRADE DATA//////////////////////////////////////////////////////////////////////////////////////////////////////////
 public class Upgradeable {
    public string SliderName = "";
    public string ButtonName = "";
@@ -301,3 +294,4 @@ public class UpgDataContainer {
       MaxHealth.ButtonName = nameof(MyModConfig.UpgradeButtonMaxHealth);
    }
 }
+//END OF UPGRADE DATA///////////////////////////////////////////////////////////////////////////////////////////////////

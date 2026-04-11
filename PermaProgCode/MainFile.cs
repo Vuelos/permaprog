@@ -8,11 +8,10 @@ using MegaCrit.Sts2.Core.Achievements;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Modding;
+using MegaCrit.Sts2.Core.Models.Characters;
+using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Runs;
-
-// ReSharper disable MemberCanBePrivate.Global
-// ReSharper disable UnusedAutoPropertyAccessor.Global
 
 namespace PermaProg.PermaProgCode;
 
@@ -30,23 +29,12 @@ public partial class MainFile : Node {
   }
 }
 
-[HarmonyPatch(typeof(Player), "PopulateStartingInventory")]
-public static class ApplyDataAtStartOfRun {
-  // ReSharper disable once InconsistentNaming
-  public static void Postfix(Player __instance) {
-    if (PermaProg.BalancingEnabled) {
-      __instance.Gold -= 99;
-      if (__instance.Gold < 0) __instance.Gold = 0;
-      __instance.Creature.SetMaxHpInternal(__instance.Creature.MaxHp - 20);
-    }
-
-    __instance.Gold += (int)PermaProg.StartGoldValue;
-    __instance.Creature.SetMaxHpInternal(__instance.Creature.MaxHp + (int)PermaProg.MaxHealthValue);
-    UpgradeCards(__instance);
-  }
-
-  private static void UpgradeCards(Player instance) {
-    var cards = instance.Deck.Cards;
+[HarmonyPatch]
+public static class PermaProgPatches {
+  [HarmonyPatch(typeof(Player), "PopulateStartingDeck")]
+  [HarmonyPostfix]
+  public static void UpgradeCards(Player __instance) {
+    var cards = __instance.Deck.Cards;
     var cardsToUpgrade = RandomlySelectedCards(cards, (int)PermaProg.CardUpgradesValue, cards.Count);
     foreach (var card in cardsToUpgrade) {
       if (!card.IsUpgradable) continue;
@@ -72,36 +60,44 @@ public static class ApplyDataAtStartOfRun {
       --available;
     }
   }
-}
 
-[HarmonyPatch(typeof(GoldReward))]
-[HarmonyPatch(MethodType.Constructor)]
-[HarmonyPatch([typeof(int), typeof(int), typeof(Player), typeof(bool)])]
-public static class IncreaseGoldRewardDuringRun {
-  public static void Prefix(ref int min, ref int max, Player player) {
+  [HarmonyPatch(typeof(GoldReward), MethodType.Constructor, [typeof(int), typeof(int), typeof(Player), typeof(bool)])]
+  [HarmonyPrefix]
+  public static void IncreaseGoldRewardDuringRun(ref int min, ref int max, Player player) {
     var balancingMultiplier = PermaProg.BalancingEnabled ? 0.8 : 1.0;
     min = (int)Math.Round(min * balancingMultiplier * (1 + PermaProg.GoldGainValue / 100));
     max = (int)Math.Round(max * balancingMultiplier * (1 + PermaProg.GoldGainValue / 100));
   }
-}
 
-/// There is 100% a variable available for this... I haven't found it yet though
-[HarmonyPatch(typeof(PlayerCmd), "GainGold")]
-public static class IncreaseCurrencyGained {
-  public static void Prefix(decimal amount, Player player, bool wasStolenBack = false) {
+  [HarmonyPatch(typeof(PlayerCmd), "GainGold")]
+  [HarmonyPrefix]
+  public static void IncreaseCurrencyGained(decimal amount, Player player, bool wasStolenBack) {
     PermaProg.CurrencyGained += (double)amount * (1 + PermaProg.CurrencyGainValue / 100);
   }
-}
 
-[HarmonyPatch(typeof(AchievementsHelper), "AfterRunEnded")]
-public static class SaveDataAtEndOfRun {
-  public static void Prefix(RunState state, Player player, bool isVictory) {
-    if (state.ActFloor >= 2) {
+  [HarmonyPatch(typeof(NGameOverScreen), "AddBadge")]
+  [HarmonyPrefix]
+  public static void UpdateBadgeInfo(string locEntryKey, string? locAmountKey, ref int amount, string? iconPath) {
+    if (locEntryKey != "BADGE.goldGained") return;
+    amount = (int)PermaProg.CurrencyGained;
+    PermaProg.CurrencyGained = 0.0;
+    ModConfig.SaveDebounced<PermaProg>();
+  }
+
+  [HarmonyPatch(typeof(NBadge), "Create")]
+  [HarmonyPrefix]
+  public static void CreateBadge(ref string label, Texture2D? icon) {
+    if (label.Contains("Gold")) label = label.Replace("Gold", "Currency");
+  }
+
+  [HarmonyPatch(typeof(AchievementsHelper), "AfterRunEnded")]
+  [HarmonyPrefix]
+  public static void SaveDataAtEndOfRun(RunState state, Player player, bool isVictory) {
+    if (state.CurrentActIndex >= 2) {
       PermaProg.CurrencyAvailable = (int)(PermaProg.CurrencyAvailable * (1 + PermaProg.CurrencyInterestValue / 100));
     }
 
     PermaProg.CurrencyAvailable += (int)PermaProg.CurrencyGained;
-    PermaProg.CurrencyGained = 0.0;
     ModConfig.SaveDebounced<PermaProg>();
   }
 }
@@ -421,3 +417,81 @@ public class UpgDataContainer {
   }
 }
 //END OF UPGRADE DATA///////////////////////////////////////////////////////////////////////////////////////////////////
+
+/* These will be placed here until I figure out a more efficient way to write this code */
+/* Should use the 'all characters list' which might give support for custom characters */
+[HarmonyPatch]
+public static class SetStartingHp {
+  private static void SetHp(ref int __result) {
+    if (PermaProg.BalancingEnabled) __result -= 20;
+    __result += (int)PermaProg.MaxHealthValue;
+  }
+
+  [HarmonyPatch(typeof(Ironclad), "StartingHp", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun1(ref int __result) {
+    SetHp(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Silent), "StartingHp", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun2(ref int __result) {
+    SetHp(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Regent), "StartingHp", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun3(ref int __result) {
+    SetHp(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Necrobinder), "StartingHp", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun4(ref int __result) {
+    SetHp(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Defect), "StartingHp", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun5(ref int __result) {
+    SetHp(ref __result);
+  }
+}
+
+[HarmonyPatch]
+public static class SetStartingGold {
+  private static void SetGold(ref int __result) {
+    if (PermaProg.BalancingEnabled) __result = 0;
+    __result += (int)PermaProg.StartGoldValue;
+  }
+
+  [HarmonyPatch(typeof(Ironclad), "StartingGold", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun1(ref int __result) {
+    SetGold(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Silent), "StartingGold", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun2(ref int __result) {
+    SetGold(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Regent), "StartingGold", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun3(ref int __result) {
+    SetGold(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Necrobinder), "StartingGold", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun4(ref int __result) {
+    SetGold(ref __result);
+  }
+
+  [HarmonyPatch(typeof(Defect), "StartingGold", MethodType.Getter)]
+  [HarmonyPostfix]
+  public static void Fun5(ref int __result) {
+    SetGold(ref __result);
+  }
+}

@@ -23,12 +23,8 @@ public partial class MainFile : Node {
   public static MegaCrit.Sts2.Core.Logging.Logger Logger { get; } =
     new(ModId, MegaCrit.Sts2.Core.Logging.LogType.Generic);
 
-  public static double CurrencyGained { get; set; }
-
-  public static UpgDataContainer Upgrades { get; } = new();
-
   public static void Initialize() {
-    ModConfigRegistry.Register(ModId, new MyModConfig());
+    ModConfigRegistry.Register(ModId, new PermaProg());
     Harmony harmony = new(ModId);
     harmony.PatchAll();
   }
@@ -38,20 +34,20 @@ public partial class MainFile : Node {
 public static class ApplyDataAtStartOfRun {
   // ReSharper disable once InconsistentNaming
   public static void Postfix(Player __instance) {
-    if (MyModConfig.BalancingEnabled) {
+    if (PermaProg.BalancingEnabled) {
       __instance.Gold -= 99;
       if (__instance.Gold < 0) __instance.Gold = 0;
       __instance.Creature.SetMaxHpInternal(__instance.Creature.MaxHp - 20);
     }
 
-    __instance.Gold += (int)MyModConfig.StartGoldValue;
-    __instance.Creature.SetMaxHpInternal(__instance.Creature.MaxHp + (int)MyModConfig.MaxHealthValue);
+    __instance.Gold += (int)PermaProg.StartGoldValue;
+    __instance.Creature.SetMaxHpInternal(__instance.Creature.MaxHp + (int)PermaProg.MaxHealthValue);
     UpgradeCards(__instance);
   }
 
   private static void UpgradeCards(Player instance) {
     var cards = instance.Deck.Cards;
-    var cardsToUpgrade = RandomlySelectedCards(cards, (int)MyModConfig.CardUpgradesValue, cards.Count);
+    var cardsToUpgrade = RandomlySelectedCards(cards, (int)PermaProg.CardUpgradesValue, cards.Count);
     foreach (var card in cardsToUpgrade) {
       if (!card.IsUpgradable) continue;
       card.UpgradeInternal();
@@ -83,10 +79,9 @@ public static class ApplyDataAtStartOfRun {
 [HarmonyPatch([typeof(int), typeof(int), typeof(Player), typeof(bool)])]
 public static class IncreaseGoldRewardDuringRun {
   public static void Prefix(ref int min, ref int max, Player player) {
-    var minTmp = MyModConfig.BalancingEnabled ? min * 0.8 : min;
-    var maxTmp = MyModConfig.BalancingEnabled ? max * 0.8 : max;
-    min = (int)Math.Round(minTmp * (1 + MyModConfig.GoldGainValue / 100));
-    max = (int)Math.Round(maxTmp * (1 + MyModConfig.GoldGainValue / 100));
+    var balancingMultiplier = PermaProg.BalancingEnabled ? 0.8 : 1.0;
+    min = (int)Math.Round(min * balancingMultiplier * (1 + PermaProg.GoldGainValue / 100));
+    max = (int)Math.Round(max * balancingMultiplier * (1 + PermaProg.GoldGainValue / 100));
   }
 }
 
@@ -94,22 +89,25 @@ public static class IncreaseGoldRewardDuringRun {
 [HarmonyPatch(typeof(PlayerCmd), "GainGold")]
 public static class IncreaseCurrencyGained {
   public static void Prefix(decimal amount, Player player, bool wasStolenBack = false) {
-    MainFile.CurrencyGained += (double)amount * (1 + MyModConfig.CurrencyGainValue / 100);
+    PermaProg.CurrencyGained += (double)amount * (1 + PermaProg.CurrencyGainValue / 100);
   }
 }
 
 [HarmonyPatch(typeof(AchievementsHelper), "AfterRunEnded")]
 public static class SaveDataAtEndOfRun {
   public static void Prefix(RunState state, Player player, bool isVictory) {
-    MyModConfig.CurrencyAvailable += (int)(MainFile.CurrencyGained * (1 + MyModConfig.CurrencyMultiplierValue / 100));
-    MainFile.CurrencyGained = 0.0;
-    ModConfig.SaveDebounced<MyModConfig>();
+    PermaProg.CurrencyAvailable = (int)(PermaProg.CurrencyAvailable * (1 + PermaProg.CurrencyInterestValue / 100));
+    PermaProg.CurrencyAvailable += (int)PermaProg.CurrencyGained;
+    PermaProg.CurrencyGained = 0.0;
+    ModConfig.SaveDebounced<PermaProg>();
   }
 }
 
-internal class MyModConfig : SimpleModConfig {
+internal class PermaProg : SimpleModConfig {
   private static Control? _optionContainer;
-  public static int CurrencyAvailable { get; set; }
+  [ConfigIgnore] public static double CurrencyGained { get; set; }
+  [ConfigIgnore] public static UpgDataContainer Upgrades { get; } = new();
+  [ConfigHideInUI] public static int CurrencyAvailable { get; set; }
   public static string CurrencyText { get; set; } = "0";
   public static bool BalancingEnabled { get; set; } = true;
 
@@ -124,9 +122,9 @@ internal class MyModConfig : SimpleModConfig {
     _optionContainer.AddChild(CreateDividerControl());
 
     _optionContainer.AddChild(CreateSectionHeader("Tier 1 upgrades"));
-    CreateUpgradeableUi(MainFile.Upgrades.StartGold, UpgradeButtonStartGold);
-    CreateUpgradeableUi(MainFile.Upgrades.CurrencyGain, UpgradeButtonCurrencyGain);
-    CreateUpgradeableUi(MainFile.Upgrades.MaxHealth, UpgradeButtonMaxHealth);
+    CreateUpgradeableUi(Upgrades.StartGold, UpgradeButtonStartGold);
+    CreateUpgradeableUi(Upgrades.CurrencyGain, UpgradeButtonCurrencyGain);
+    CreateUpgradeableUi(Upgrades.MaxHealth, UpgradeButtonMaxHealth);
 
     UpdateCurrentValues();
     Tier2Upgrades(optionContainer);
@@ -135,26 +133,26 @@ internal class MyModConfig : SimpleModConfig {
   }
 
   private void Tier2Upgrades(Control optionContainer) {
-    if (MainFile.Upgrades.TotalCurrentLevels < 5) {
+    if (Upgrades.TotalCurrentLevels < 5) {
       optionContainer.AddChild(CreateSectionHeader("..some beings... ..are yet to... ..be revealed..."));
       optionContainer.AddChild(CreateSectionHeader("???"));
 
       /* These are temporarily(?) necessary as the restore defaults button triggers an error log */
       /* when: 1) tier 2 enabled 2) restore defaults 3) leave and re-enter settings menu. */
-      MainFile.Upgrades.CurrencyMultiplier.Unlocked = false;
-      MainFile.Upgrades.GoldGain.Unlocked = false;
-      MainFile.Upgrades.CardUpgrades.Unlocked = false;
+      Upgrades.CurrencyInterest.Unlocked = false;
+      Upgrades.GoldGain.Unlocked = false;
+      Upgrades.CardUpgrades.Unlocked = false;
     }
     else {
       optionContainer.AddChild(CreateSectionHeader("Tier 2 upgrades"));
-      CreateUpgradeableUi(MainFile.Upgrades.CurrencyMultiplier, UpgradeButtonCurrencyMultiplier);
-      CreateUpgradeableUi(MainFile.Upgrades.GoldGain, UpgradeButtonGoldGain);
-      CreateUpgradeableUi(MainFile.Upgrades.CardUpgrades, UpgradeButtonCardUpgrades);
+      CreateUpgradeableUi(Upgrades.CurrencyInterest, UpgradeButtonCurrencyInterest);
+      CreateUpgradeableUi(Upgrades.GoldGain, UpgradeButtonGoldGain);
+      CreateUpgradeableUi(Upgrades.CardUpgrades, UpgradeButtonCardUpgrades);
     }
   }
 
   private void Tier3Upgrades(Control optionContainer) {
-    switch (MainFile.Upgrades.TotalCurrentLevels) {
+    switch (Upgrades.TotalCurrentLevels) {
       case < 5:
         break;
       case < 10:
@@ -182,8 +180,8 @@ internal class MyModConfig : SimpleModConfig {
   public static int CardUpgradesLevel { get; set; }
   [SliderRange(0.0, 1000.0)] public static double CardUpgradesValue { get; set; }
 
-  public static int CurrencyMultiplierLevel { get; set; }
-  [SliderRange(0.0, 1000.0)] public static double CurrencyMultiplierValue { get; set; }
+  public static int CurrencyInterestLevel { get; set; }
+  [SliderRange(0.0, 1000.0)] public static double CurrencyInterestValue { get; set; }
 
   public static int GoldGainLevel { get; set; }
   [SliderRange(0.0, 1000.0)] public static double GoldGainValue { get; set; }
@@ -191,32 +189,32 @@ internal class MyModConfig : SimpleModConfig {
 
   //BUTTONS/////////////////////////////////////////////////////////////////////////////////////////////////////////////
   public void UpgradeButtonStartGold() {
-    if (IsLevelUpSuccessful(MainFile.Upgrades.StartGold)) StartGoldLevel++;
+    if (IsLevelUpSuccessful(Upgrades.StartGold)) StartGoldLevel++;
     UpdateUi();
   }
 
   public void UpgradeButtonCurrencyGain() {
-    if (IsLevelUpSuccessful(MainFile.Upgrades.CurrencyGain)) CurrencyGainLevel++;
+    if (IsLevelUpSuccessful(Upgrades.CurrencyGain)) CurrencyGainLevel++;
     UpdateUi();
   }
 
   public void UpgradeButtonMaxHealth() {
-    if (IsLevelUpSuccessful(MainFile.Upgrades.MaxHealth)) MaxHealthLevel++;
+    if (IsLevelUpSuccessful(Upgrades.MaxHealth)) MaxHealthLevel++;
     UpdateUi();
   }
 
   public void UpgradeButtonCardUpgrades() {
-    if (IsLevelUpSuccessful(MainFile.Upgrades.CardUpgrades)) CardUpgradesLevel++;
+    if (IsLevelUpSuccessful(Upgrades.CardUpgrades)) CardUpgradesLevel++;
     UpdateUi();
   }
 
-  public void UpgradeButtonCurrencyMultiplier() {
-    if (IsLevelUpSuccessful(MainFile.Upgrades.CurrencyMultiplier)) CurrencyMultiplierLevel++;
+  public void UpgradeButtonCurrencyInterest() {
+    if (IsLevelUpSuccessful(Upgrades.CurrencyInterest)) CurrencyInterestLevel++;
     UpdateUi();
   }
 
   public void UpgradeButtonGoldGain() {
-    if (IsLevelUpSuccessful(MainFile.Upgrades.GoldGain)) GoldGainLevel++;
+    if (IsLevelUpSuccessful(Upgrades.GoldGain)) GoldGainLevel++;
     UpdateUi();
   }
 
@@ -236,14 +234,14 @@ internal class MyModConfig : SimpleModConfig {
 
   private void UpdateCurrentValues() {
     var totalCurrentLevels = 0;
-    foreach (var upg in MainFile.Upgrades.All.Keys) {
+    foreach (var upg in Upgrades.All.Keys) {
       if (!upg.Unlocked) continue;
       var propertyInfo = GetPropertyInfo(upg.CurrentLevelName);
-      upg.CurrentLevel = (int)(propertyInfo.GetValue(MainFile.Upgrades) ?? throw new InvalidOperationException());
+      upg.CurrentLevel = (int)(propertyInfo.GetValue(Upgrades) ?? throw new InvalidOperationException());
       totalCurrentLevels += upg.CurrentLevel;
     }
 
-    MainFile.Upgrades.TotalCurrentLevels = totalCurrentLevels;
+    Upgrades.TotalCurrentLevels = totalCurrentLevels;
   }
 
   private static void UpdateCurrencyHeader() {
@@ -253,7 +251,7 @@ internal class MyModConfig : SimpleModConfig {
   }
 
   private static void UpdateSliders() {
-    foreach (var upg in MainFile.Upgrades.All.Keys) {
+    foreach (var upg in Upgrades.All.Keys) {
       if (!upg.Unlocked) continue;
       var sliderRow = _optionContainer?.GetNode<NConfigOptionRow>(upg.SliderName);
       if (sliderRow?.SettingControl is not NConfigSlider slider) return;
@@ -270,7 +268,7 @@ internal class MyModConfig : SimpleModConfig {
   }
 
   private static void UpdateButtons() {
-    foreach (var upg in MainFile.Upgrades.All.Keys) {
+    foreach (var upg in Upgrades.All.Keys) {
       if (!upg.Unlocked) continue;
       var buttonRow = _optionContainer?.GetNode<NConfigOptionRow>(upg.ButtonName);
       if (buttonRow?.SettingControl is not NConfigButton button) return;
@@ -343,7 +341,7 @@ public class UpgDataContainer {
   public readonly Upgradeable CurrencyGain = new();
   public readonly Upgradeable MaxHealth = new();
   public readonly Upgradeable CardUpgrades = new();
-  public readonly Upgradeable CurrencyMultiplier = new();
+  public readonly Upgradeable CurrencyInterest = new();
   public readonly Upgradeable GoldGain = new();
 
   public UpgDataContainer() {
@@ -351,7 +349,7 @@ public class UpgDataContainer {
     All.Add(CurrencyGain, nameof(CurrencyGain));
     All.Add(MaxHealth, nameof(MaxHealth));
     All.Add(CardUpgrades, nameof(CardUpgrades));
-    All.Add(CurrencyMultiplier, nameof(CurrencyMultiplier));
+    All.Add(CurrencyInterest, nameof(CurrencyInterest));
     All.Add(GoldGain, nameof(GoldGain));
 
     foreach (var upg in All) {
@@ -393,10 +391,10 @@ public class UpgDataContainer {
     }
 
     {
-      CurrencyMultiplier.MaxLevel = 19;
-      CurrencyMultiplier.Vals = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 95, 100];
-      CurrencyMultiplier.UpgCosts = [
-        100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900
+      CurrencyInterest.MaxLevel = 20;
+      CurrencyInterest.Vals = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+      CurrencyInterest.UpgCosts = [
+        100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900, 2000
       ];
     }
 
@@ -409,11 +407,10 @@ public class UpgDataContainer {
     }
 
     // Sanity check
-    foreach (var upg in All.Where(upg =>
-               upg.Key.Vals.Count != upg.Key.MaxLevel + 1 || upg.Key.UpgCosts.Count != upg.Key.MaxLevel)) {
-      GD.Print("This one :( -> ", upg.Key.CurrentLevelName);
-      GD.Print("MaxLevel, Vals.count, UpgCosts.count: " + upg.Key.MaxLevel + " ", +upg.Key.Vals.Count + " ",
-        +upg.Key.UpgCosts.Count);
+    foreach (var upg in All.Keys.Where(upg =>
+               upg.Vals.Count != upg.MaxLevel + 1 || upg.UpgCosts.Count != upg.MaxLevel)) {
+      GD.Print("This one :( -> ", upg.CurrentLevelName);
+      GD.Print("MaxLevel, Vals, UpgCosts: " + upg.MaxLevel + " ", +upg.Vals.Count + " ", +upg.UpgCosts.Count);
       throw new InvalidOperationException();
     }
   }

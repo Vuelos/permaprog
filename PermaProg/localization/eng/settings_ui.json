@@ -6,12 +6,12 @@
   "PERMAPROG-CURRENCY_GAIN_VALUE.title": "Extra currency gained %:",
   "PERMAPROG-MAX_HEALTH_VALUE.title": "Extra max health:",
   "PERMAPROG-CARD_UPGRADES_VALUE.title": "Upgraded starting cards:",
-  "PERMAPROG-CURRENCY_MULTIPLIER_VALUE.title": "Currency multiplier:",
+  "PERMAPROG-CURRENCY_INTEREST_VALUE.title": "Currency Interest:",
   "PERMAPROG-GOLD_GAIN_VALUE.title": "Gold gained:",
   "PERMAPROG-UPGRADE_BUTTON_START_GOLD.title": "Upgrade +10 gold",
   "PERMAPROG-UPGRADE_BUTTON_CURRENCY_GAIN.title": "Upgrade +10 %",
   "PERMAPROG-UPGRADE_BUTTON_MAX_HEALTH.title": "Upgrade +1 hp",
   "PERMAPROG-UPGRADE_BUTTON_CARD_UPGRADES.title": "Upgrade +1 card",
-  "PERMAPROG-UPGRADE_BUTTON_CURRENCY_MULTIPLIER.title": "Upgrade +5 %",
+  "PERMAPROG-UPGRADE_BUTTON_CURRENCY_INTEREST.title": "Upgrade +1 %",
   "PERMAPROG-UPGRADE_BUTTON_GOLD_GAIN.title": "Upgrade +5 %"
 }

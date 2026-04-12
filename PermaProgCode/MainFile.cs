@@ -1,19 +1,19 @@
+using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
+using MegaCrit.Sts2.Core.Models.Characters;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Achievements;
+using PermaProg.PermaProgCode.Relics;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Modding;
+using MegaCrit.Sts2.Core.Rewards;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Runs;
+using BaseLib.Config.UI;
+using Godot.Collections;
 using System.Reflection;
 using BaseLib.Config;
-using BaseLib.Config.UI;
-using Godot;
-using Godot.Collections;
 using HarmonyLib;
-using MegaCrit.Sts2.Core.Achievements;
-using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Modding;
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Characters;
-using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
-using MegaCrit.Sts2.Core.Rewards;
-using MegaCrit.Sts2.Core.Runs;
-using PermaProg.PermaProgCode.Relics;
+using Godot;
 
 namespace PermaProg.PermaProgCode;
 
@@ -139,6 +139,7 @@ internal class PermaProg : SimpleModConfig {
     UpdateCurrentValues();
     Tier2Upgrades(optionContainer);
     Tier3Upgrades(optionContainer);
+    Tier4Upgrades(optionContainer);
     UpdateUi();
   }
 
@@ -171,6 +172,21 @@ internal class PermaProg : SimpleModConfig {
         break;
       default:
         optionContainer.AddChild(CreateSectionHeader("Tier 3 upgrades"));
+        CreateUpgradeableUi(Upgrades.BlockGain, UpgradeButtonBlockGain);
+        break;
+    }
+  }
+
+  private void Tier4Upgrades(Control optionContainer) {
+    switch (Upgrades.TotalCurrentLevels) {
+      case < 10:
+        break;
+      case < 20:
+        optionContainer.AddChild(CreateSectionHeader("..the journey... ..shall continue... ..with effort..."));
+        optionContainer.AddChild(CreateSectionHeader("???"));
+        break;
+      default:
+        optionContainer.AddChild(CreateSectionHeader("Tier 4 upgrades"));
         optionContainer.AddChild(CreateSectionHeader("..some beings... ..are yet to... ..be created..."));
         break;
     }
@@ -195,6 +211,9 @@ internal class PermaProg : SimpleModConfig {
 
   public static int GoldGainLevel { get; set; }
   [SliderRange(0.0, 1000.0)] public static double GoldGainValue { get; set; }
+
+  public static int BlockGainLevel { get; set; }
+  [SliderRange(0.0, 1000.0)] public static double BlockGainValue { get; set; }
   //END OF SLIDERS//////////////////////////////////////////////////////////////////////////////////////////////////////
 
   //BUTTONS/////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -225,6 +244,11 @@ internal class PermaProg : SimpleModConfig {
 
   public void UpgradeButtonGoldGain() {
     if (IsLevelUpSuccessful(Upgrades.GoldGain)) GoldGainLevel++;
+    UpdateUi();
+  }
+
+  public void UpgradeButtonBlockGain() {
+    if (IsLevelUpSuccessful(Upgrades.BlockGain)) BlockGainLevel++;
     UpdateUi();
   }
 
@@ -355,6 +379,7 @@ public class UpgDataContainer {
   public readonly Upgradeable CardUpgrades = new();
   public readonly Upgradeable CurrencyInterest = new();
   public readonly Upgradeable GoldGain = new();
+  public readonly Upgradeable BlockGain = new();
 
   public UpgDataContainer() {
     All.Add(StartGold, nameof(StartGold));
@@ -363,6 +388,7 @@ public class UpgDataContainer {
     All.Add(CardUpgrades, nameof(CardUpgrades));
     All.Add(CurrencyInterest, nameof(CurrencyInterest));
     All.Add(GoldGain, nameof(GoldGain));
+    All.Add(BlockGain, nameof(BlockGain));
 
     foreach (var upg in All) {
       upg.Key.SliderName = upg.Value + "Value";
@@ -404,6 +430,12 @@ public class UpgDataContainer {
       GoldGain.MaxLevel = 10;
       GoldGain.Vals = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
       GoldGain.UpgCosts = [100, 300, 600, 900, 1200, 1500, 1800, 2100, 2400, 2700];
+    }
+
+    {
+      BlockGain.MaxLevel = 3;
+      BlockGain.Vals = [0, 1, 2, 3];
+      BlockGain.UpgCosts = [5000, 15000, 45000];
     }
 
     // Sanity check

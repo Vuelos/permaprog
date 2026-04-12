@@ -8,6 +8,7 @@
   "PERMAPROG-CARD_UPGRADES_VALUE.title": "Upgraded starting cards:",
   "PERMAPROG-CURRENCY_INTEREST_VALUE.title": "Currency interest:",
   "PERMAPROG-GOLD_GAIN_VALUE.title": "Gold gained:",
+  "PERMAPROG-BLOCK_GAIN_VALUE.title": "Block gained at turn end:",
   
   "PERMAPROG-UPGRADE_BUTTON_START_GOLD.title": "Upgrade +20 gold",
   "PERMAPROG-UPGRADE_BUTTON_CURRENCY_GAIN.title": "Upgrade +30 %",
@@ -15,6 +16,7 @@
   "PERMAPROG-UPGRADE_BUTTON_CARD_UPGRADES.title": "Upgrade +1 card",
   "PERMAPROG-UPGRADE_BUTTON_CURRENCY_INTEREST.title": "Upgrade +4 %",
   "PERMAPROG-UPGRADE_BUTTON_GOLD_GAIN.title": "Upgrade +10 %",
+  "PERMAPROG-UPGRADE_BUTTON_BLOCK_GAIN.title": "Upgrade +1 block",
 
   "PERMAPROG-CURRENCY_INTEREST_VALUE.hover.title": "Currency interest",
   "PERMAPROG-CURRENCY_INTEREST_VALUE.hover.desc": "Only applies if Act 2 is reached during the run"

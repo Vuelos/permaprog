@@ -92,7 +92,6 @@ public static class PermaProgPatches {
     if (locEntryKey != "BADGE.goldGained") return;
     amount = (int)PermaProg.CurrencyGained;
     PermaProg.CurrencyGained = 0.0;
-    ModConfig.SaveDebounced<PermaProg>();
   }
 
   [HarmonyPatch(typeof(NBadge), "Create")]

@@ -157,7 +157,7 @@ internal class PermaProg : SimpleModConfig {
     else {
       optionContainer.AddChild(CreateSectionHeader("Tier 2 upgrades"));
       CreateUpgradeableUi(Upgrades.CurrencyInterest, UpgradeButtonCurrencyInterest, true);
-      CreateUpgradeableUi(Upgrades.GoldGain, UpgradeButtonGoldGain);
+      CreateUpgradeableUi(Upgrades.GoldGain, UpgradeButtonGoldGain, true);
       CreateUpgradeableUi(Upgrades.CardUpgrades, UpgradeButtonCardUpgrades);
     }
   }

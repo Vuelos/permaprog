@@ -10,6 +10,8 @@ using BaseLib.Extensions;
 using BaseLib.Abstracts;
 using BaseLib.Utils;
 using Godot;
+//using MegaCrit.Sts2.Core.Models.Powers;
+//using MegaCrit.Sts2.Core.Rooms;
 
 namespace PermaProg.PermaProgCode.Relics;
 
@@ -21,6 +23,13 @@ public sealed class PpRelic : CustomRelicModel {
   public override RelicRarity Rarity => RelicRarity.Starter;
 
   protected override IEnumerable<DynamicVar> CanonicalVars => [new BlockVar(1M, ValueProp.Unpowered)];
+
+  // Uncomment for debug
+  // public override async Task AfterRoomEntered(AbstractRoom room) {
+  //   if (room is not CombatRoom) return;
+  //   Flash();
+  //   await PowerCmd.Apply<StrengthPower>(Owner.Creature, 999M, Owner.Creature, null);
+  // }
 
   public override Task BeforeTurnEndVeryEarly(PlayerChoiceContext choiceContext, CombatSide side) {
     if (side != Owner.Creature.Side)

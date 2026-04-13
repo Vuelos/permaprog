@@ -44,6 +44,9 @@ public static class PermaProgPatches {
       card.UpgradeInternal();
       card.FinalizeUpgradeInternal();
     }
+
+    PermaProg.TotalCurrencyGainedDuringRun = 0.0;
+    ModConfig.SaveDebounced<PermaProg>();
   }
 
   // Ty Matthew Watson on StackOverflow
@@ -83,15 +86,15 @@ public static class PermaProgPatches {
   [HarmonyPatch(typeof(PlayerCmd), "GainGold")]
   [HarmonyPrefix]
   public static void IncreaseCurrencyGained(decimal amount, Player player, bool wasStolenBack) {
-    PermaProg.CurrencyGained += (double)amount * (1 + PermaProg.CurrencyGainValue / 100);
+    PermaProg.TotalCurrencyGainedDuringRun += (double)amount * (1 + PermaProg.CurrencyGainValue / 100);
+    ModConfig.SaveDebounced<PermaProg>();
   }
 
   [HarmonyPatch(typeof(NGameOverScreen), "AddBadge")]
   [HarmonyPrefix]
   public static void UpdateBadgeInfo(string locEntryKey, string? locAmountKey, ref int amount, string? iconPath) {
     if (locEntryKey != "BADGE.goldGained") return;
-    amount = (int)PermaProg.CurrencyGained;
-    PermaProg.CurrencyGained = 0.0;
+    amount = (int)PermaProg.TotalCurrencyGainedDuringRun;
   }
 
   [HarmonyPatch(typeof(NBadge), "Create")]
@@ -107,24 +110,38 @@ public static class PermaProgPatches {
       PermaProg.CurrencyAvailable = (int)(PermaProg.CurrencyAvailable * (1 + PermaProg.CurrencyInterestValue / 100));
     }
 
-    PermaProg.CurrencyAvailable += (int)PermaProg.CurrencyGained;
+    PermaProg.CurrencyAvailable += (int)PermaProg.TotalCurrencyGainedDuringRun;
     ModConfig.SaveDebounced<PermaProg>();
   }
 }
 
 internal class PermaProg : SimpleModConfig {
   private static Control? _optionContainer;
-  [ConfigIgnore] public static double CurrencyGained { get; set; }
   [ConfigIgnore] public static UpgDataContainer Upgrades { get; } = new();
+  [ConfigHideInUI] public static double TotalCurrencyGainedDuringRun { get; set; }
   [ConfigHideInUI] public static int CurrencyAvailable { get; set; }
   public static string CurrencyText { get; set; } = "0";
+  public static string CurrencyGainedLastRunText { get; set; } = "0";
   public static bool BalancingEnabled { get; set; } = true;
 
   //UI GENERATION///////////////////////////////////////////////////////////////////////////////////////////////////////
   public override void SetupConfigUI(Control optionContainer) {
     _optionContainer = optionContainer;
+    //AddRestoreDefaultsButton(_optionContainer); // Uncomment for debug
 
     _optionContainer.AddChild(CreateToggleOption(GetPropertyInfo(nameof(BalancingEnabled))));
+
+    var totalCurrencyGainedDuringRunTmp = (int)TotalCurrencyGainedDuringRun;
+    CurrencyGainedLastRunText = totalCurrencyGainedDuringRunTmp.ToString();
+    var propertyInfo = GetPropertyInfo(nameof(CurrencyGainedLastRunText));
+    var headerRow = CreateLineEditOption(propertyInfo);
+    if (headerRow.SettingControl is NConfigLineEdit header) {
+      header.AddThemeFontSizeOverride("font_size", 20);
+      header.Editable = false;
+      _optionContainer.AddChild(headerRow);
+    }
+
+
     CreateCurrencyHeader();
     _optionContainer.AddChild(CreateDividerControl());
 

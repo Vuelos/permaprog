@@ -2,6 +2,7 @@
   "PERMAPROG.mod_title": "PermaProg Shop",
   "PERMAPROG-BALANCING_ENABLED.title": "Enable balancing (recommended on!)",
   "PERMAPROG-CURRENCY_TEXT.title": "Currency available to spend:",
+  "PERMAPROG-CURRENCY_GAINED_LAST_RUN_TEXT.title": "Currency gained last run:",
   "PERMAPROG-START_GOLD_VALUE.title": "Starting gold:",
   "PERMAPROG-CURRENCY_GAIN_VALUE.title": "Currency gained:",
   "PERMAPROG-MAX_HEALTH_VALUE.title": "Extra max health:",

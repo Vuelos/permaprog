@@ -3,7 +3,7 @@
   "name": "PermaProg",
   "author": "Tw1nfire",
   "description": "Permanent progression & roguelite elements for Slay the Spire 2",
-  "version": "v0.4.1",
+  "version": "v0.4.2",
   "has_pck": true,
   "has_dll": true,
   "dependencies": ["BaseLib"],

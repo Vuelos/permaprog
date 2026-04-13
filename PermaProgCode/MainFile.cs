@@ -76,7 +76,7 @@ public static class PermaProgPatches {
   [HarmonyPatch(typeof(Player), "PopulateStartingRelics")]
   [HarmonyPostfix]
   public static void AddPpRelic(Player __instance) {
-    MF.Log.Info("Add Peapod relic");
+    MF.Log.Info("Adding Peapod relic");
 
     var ppRelic = ModelDb.Relic<PpRelic>().ToMutable();
     ppRelic.FloorAddedToDeck = 1;
@@ -127,7 +127,7 @@ public static class PermaProgPatches {
       PP.CurrencyAvailable += interest;
     }
 
-    MF.Log.Info($"Add {PP.TotalCurrencyGainedDuringRun} to available currency");
+    MF.Log.Info($"Adding {PP.TotalCurrencyGainedDuringRun} to available currency");
     PP.CurrencyAvailable += PP.TotalCurrencyGainedDuringRun;
     ModConfig.SaveDebounced<PP>();
   }
@@ -175,6 +175,12 @@ internal class PP : SimpleModConfig {
     if (Upgrades.TotalCurrentLevels < 5) {
       optionContainer.AddChild(CreateSectionHeader("..some beings... ..are yet to... ..be revealed..."));
       optionContainer.AddChild(CreateSectionHeader("???"));
+#if DEBUG
+      Upgrades.CurrencyInterest.Unlocked = false;
+      Upgrades.GoldGain.Unlocked = false;
+      Upgrades.CardUpgrades.Unlocked = false;
+      Upgrades.BlockGain.Unlocked = false;
+#endif
     }
     else {
       optionContainer.AddChild(CreateSectionHeader("Tier 2 upgrades"));
@@ -210,6 +216,7 @@ internal class PP : SimpleModConfig {
       default:
         optionContainer.AddChild(CreateSectionHeader("Tier 4 upgrades"));
         optionContainer.AddChild(CreateSectionHeader("..some beings... ..are yet to... ..be created..."));
+        optionContainer.AddChild(CreateSectionHeader("(end of beta content)"));
         break;
     }
   }
@@ -275,8 +282,9 @@ internal class PP : SimpleModConfig {
   }
 
 #if DEBUG
-  public static void AddGold5000() {
+  public void AddGold5000() {
     CurrencyAvailable += 5000;
+    UpdateUi();
   }
 #endif
   //END OF BUTTONS//////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -311,12 +319,13 @@ internal class PP : SimpleModConfig {
     if (headerRow2?.SettingControl is NConfigLineEdit header2) header2.Text = CurrencyGainedLastRunText;
   }
 
-  private static void UpdateSliders() {
+  private void UpdateSliders() {
     foreach (var upg in Upgrades.All.Keys) {
       if (!upg.Unlocked) continue;
       var sliderRow = _optionContainer?.GetNode<NConfigOptionRow>(upg.SliderName);
       if (sliderRow?.SettingControl is not NConfigSlider slider) return;
 
+      IsArraySafe(upg, upg.Vals);
       var maxSliderValue = upg.Vals[upg.CurrentLevel];
       if (maxSliderValue <= 0) {
         slider.Visible = false;
@@ -328,7 +337,7 @@ internal class PP : SimpleModConfig {
     }
   }
 
-  private static void UpdateButtons() {
+  private void UpdateButtons() {
     foreach (var upg in Upgrades.All.Keys) {
       if (!upg.Unlocked) continue;
       var buttonRow = _optionContainer?.GetNode<NConfigOptionRow>(upg.ButtonName);
@@ -336,18 +345,18 @@ internal class PP : SimpleModConfig {
 
       if (upg.CurrentLevel >= upg.MaxLevel) {
         (button.GetChild(1) as Label)!.Text = "Maxed out!";
+        continue;
       }
-      else if (upg.UpgCosts[upg.CurrentLevel] <= 0) {
-        (button.GetChild(1) as Label)!.Text = "Free!";
-      }
-      else {
-        (button.GetChild(1) as Label)!.Text = upg.UpgCosts[upg.CurrentLevel].ToString();
-      }
+
+      IsArraySafe(upg, upg.UpgCosts);
+      (button.GetChild(1) as Label)!.Text =
+        upg.UpgCosts[upg.CurrentLevel] <= 0 ? "Free!" : upg.UpgCosts[upg.CurrentLevel].ToString();
     }
   }
 
-  private static bool IsLevelUpSuccessful(Upgradeable upg) {
+  private bool IsLevelUpSuccessful(Upgradeable upg) {
     if (upg.CurrentLevel >= upg.MaxLevel) return false;
+    if (!IsArraySafe(upg, upg.UpgCosts)) return false;
     if (upg.UpgCosts[upg.CurrentLevel] > CurrencyAvailable) return false;
 
     CurrencyAvailable -= upg.UpgCosts[upg.CurrentLevel];
@@ -379,6 +388,17 @@ internal class PP : SimpleModConfig {
     var propertyInfo = ConfigProperties.Find(x => x.Name == name);
     return propertyInfo ?? throw new InvalidOperationException();
   }
+
+  private bool IsArraySafe(Upgradeable upg, Array<int> upgArray) {
+    if (upg.CurrentLevel <= upgArray.Count - 1 || upg.CurrentLevel == 0) return true;
+    
+    MF.Log.Error($"{upg.CurrentLevelName}: Current level ({upg.CurrentLevel}) is higher than values " +
+                $"available ({upgArray.Count - 1}). Lowering value to max level available. Bugs may occur");
+    upg.CurrentLevel = upgArray.Count - 1;
+    GetPropertyInfo(upg.CurrentLevelName).SetValue(Upgrades, upg.CurrentLevel);
+    return false;
+  }
+
   //END OF HELPER FUNCTIONS/////////////////////////////////////////////////////////////////////////////////////////////
 }
 

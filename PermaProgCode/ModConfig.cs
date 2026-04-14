@@ -232,7 +232,7 @@ internal class PP : SimpleModConfig
             }
             else
             {
-                slider.SetRange(0, maxSliderValue);
+                slider.SetRange(0.0, maxSliderValue);
                 slider.Visible = true;
             }
         }

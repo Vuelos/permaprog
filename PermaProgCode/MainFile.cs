@@ -8,6 +8,8 @@ using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Rooms;
+using MegaCrit.Sts2.Core.Saves;
 using MegaCrit.Sts2.Core.Runs;
 using BaseLib.Config.UI;
 using Godot.Collections;
@@ -35,25 +37,29 @@ public partial class MF : Node {
   }
 }
 
-// Current earliest entrypoint to run, do start-of-run things here
 [HarmonyPatch]
 public static class PermaProgPatches {
+  [HarmonyPatch(typeof(Player), "PopulateStartingInventory")]
+  [HarmonyPrefix]
+  public static void StartNewRun(Player __instance) {
+    MF.Log.Info("Starting new run");
+
+    PP.TotalCurrencyGainedDuringRun = 0;
+    ModConfig.SaveDebounced<PP>();
+  }
+
   [HarmonyPatch(typeof(Player), "PopulateStartingDeck")]
   [HarmonyPostfix]
   public static void UpgradeCards(Player __instance) {
-    MF.Log.Info("Starting new run");
-
     var cards = __instance.Deck.Cards;
     var cardsToUpgrade = RandomlySelectedCards(cards, (int)PP.CardUpgradesValue, cards.Count);
     var cardModels = cardsToUpgrade.ToList();
+
     MF.Log.Info($"Upgrading {cardModels.Count} cards");
     foreach (var card in cardModels.Where(card => card.IsUpgradable)) {
       card.UpgradeInternal();
       card.FinalizeUpgradeInternal();
     }
-
-    PP.TotalCurrencyGainedDuringRun = 0;
-    ModConfig.SaveDebounced<PP>();
   }
 
   // Ty Matthew Watson on StackOverflow
@@ -97,9 +103,33 @@ public static class PermaProgPatches {
   public static void GainCurrencyDuringRun(decimal amount, Player player, bool wasStolenBack) {
     var currencyGained = (double)amount * (1 + PP.CurrencyGainValue / 100);
     MF.Log.Info(
-      $"Currency gained: {(int)currencyGained} from {amount} gold with multiplier {1 + PP.CurrencyGainValue / 100}.");
-    PP.TotalCurrencyGainedDuringRun += (int)currencyGained;
+      $"Currency to gain: {(int)currencyGained} from {amount} gold with multiplier {1 + PP.CurrencyGainValue / 100}.");
+    PP.CurrencyToGain = (int)currencyGained;
+  }
+  
+  [HarmonyPatch(typeof(SaveManager), "SaveRun")]
+  [HarmonyPostfix]
+  public static void IncrementTotalCurrencyGained(AbstractRoom? preFinishedRoom, bool saveProgress) {
+    if (PP.CurrencyToGain <= 0) return;
+    MF.Log.Info($"Add currency reward ({PP.CurrencyToGain}) to total currency gained");
+    PP.TotalCurrencyGainedDuringRun += PP.CurrencyToGain;
     MF.Log.Info($"Total currency gained during run: {PP.TotalCurrencyGainedDuringRun}.");
+    PP.CurrencyToGain = 0;
+    ModConfig.SaveDebounced<PP>();
+  }
+  
+  [HarmonyPatch(typeof(AchievementsHelper), "AfterRunEnded")]
+  [HarmonyPrefix]
+  public static void SaveDataAtEndOfRun(RunState state, Player player, bool isVictory) {
+    if (state.CurrentActIndex >= 2) {
+      var interest = (int)(PP.CurrencyAvailable * (1 + PP.CurrencyInterestValue / 100) - PP.CurrencyAvailable);
+      MF.Log.Info($"Gain {interest} in interest");
+      PP.CurrencyAvailable += interest;
+    }
+
+    MF.Log.Info($"Run ended. Adding {PP.TotalCurrencyGainedDuringRun} to available currency");
+    PP.CurrencyGainedLastRunText = PP.TotalCurrencyGainedDuringRun.ToString();
+    PP.CurrencyAvailable += PP.TotalCurrencyGainedDuringRun;
     ModConfig.SaveDebounced<PP>();
   }
 
@@ -118,27 +148,13 @@ public static class PermaProgPatches {
     MF.Log.Info("Exchange end-of-run 'Gold gained' reward badge to 'Currency Gained'");
     label = label.Replace("Gold", "Currency");
   }
-
-  [HarmonyPatch(typeof(AchievementsHelper), "AfterRunEnded")]
-  [HarmonyPrefix]
-  public static void SaveDataAtEndOfRun(RunState state, Player player, bool isVictory) {
-    if (state.CurrentActIndex >= 2) {
-      var interest = (int)(PP.CurrencyAvailable * (1 + PP.CurrencyInterestValue / 100) - PP.CurrencyAvailable);
-      MF.Log.Info($"Gain {interest} in interest");
-      PP.CurrencyAvailable += interest;
-    }
-
-    MF.Log.Info($"Adding {PP.TotalCurrencyGainedDuringRun} to available currency");
-    PP.CurrencyGainedLastRunText = PP.TotalCurrencyGainedDuringRun.ToString();
-    PP.CurrencyAvailable += PP.TotalCurrencyGainedDuringRun;
-    ModConfig.SaveDebounced<PP>();
-  }
 }
 
 // PP: PermaProg
 internal class PP : SimpleModConfig {
   private static Control? _optionContainer;
   [ConfigIgnore] public static UpgDataContainer Upgrades { get; } = new();
+  [ConfigIgnore] public static int CurrencyToGain { get; set; }
   [ConfigHideInUI] public static int TotalCurrencyGainedDuringRun { get; set; }
   [ConfigHideInUI] public static int CurrencyAvailable { get; set; }
   public static string CurrencyText { get; set; } = "0";

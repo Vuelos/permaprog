@@ -208,6 +208,7 @@ internal class PP : SimpleModConfig {
       Upgrades.GoldGain.Unlocked = false;
       Upgrades.CardUpgrades.Unlocked = false;
       Upgrades.BlockGain.Unlocked = false;
+      Upgrades.CardRarity.Unlocked = false;
 #endif
     }
     else {

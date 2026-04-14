@@ -64,7 +64,7 @@ public static class PermaProgPatches
         if (state.CurrentActIndex >= 2)
         {
             var interest = (double)PP.CurrencyAvailable;
-            interest *= 1.0 + PP.CurrencyInterestValue / 100.0;
+            interest *= PP.CurrencyInterestValue / 100.0;
             MF.Log.Info($"Gain {(int)interest} in interest");
             PP.CurrencyAvailable += (int)interest;
         }

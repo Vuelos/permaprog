@@ -1,6 +1,6 @@
 ﻿{
   "PERMAPROG.mod_title": "PermaProg Shop",
-  "PERMAPROG-BALANCING_ENABLED.title": "Enable balancing (recommended on!)",
+  "PERMAPROG-BALANCING_ENABLED.title": "Enable balancing (recommended on)",
   "PERMAPROG-CURRENCY_TEXT.title": "Currency available to spend:",
   "PERMAPROG-CURRENCY_GAINED_LAST_RUN_TEXT.title": "Currency gained last run:",
   "PERMAPROG-START_GOLD_VALUE.title": "Starting gold:",
@@ -10,7 +10,7 @@
   "PERMAPROG-CURRENCY_INTEREST_VALUE.title": "Currency interest:",
   "PERMAPROG-GOLD_GAIN_VALUE.title": "Gold gained after combat:",
   "PERMAPROG-BLOCK_GAIN_VALUE.title": "Block gained at end of turn:",
-  
+
   "PERMAPROG-UPGRADE_BUTTON_START_GOLD.title": "Upgrade +20 gold",
   "PERMAPROG-UPGRADE_BUTTON_CURRENCY_GAIN.title": "Upgrade +30 %",
   "PERMAPROG-UPGRADE_BUTTON_MAX_HEALTH.title": "Upgrade +2 hp",

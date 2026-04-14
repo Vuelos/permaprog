@@ -19,7 +19,7 @@ public partial class MF : Node
     public static void Initialize()
     {
         var version = Assembly.GetExecutingAssembly().GetName().Version;
-        Log.Info($"Game version: " + version);
+        Log.Info("Game version: " + version);
         ModConfigRegistry.Register(ModId, new PP());
         new Harmony(ModId).PatchAll();
     }

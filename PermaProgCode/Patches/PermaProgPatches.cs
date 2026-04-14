@@ -57,6 +57,13 @@ public static class PermaProgPatches
             PP.CurrencyAvailable += interest;
         }
 
+        if (PP.CurrencyToGain > 0)
+        {
+            MF.Log.Info($"Add last currency reward ({PP.CurrencyToGain}) to total currency gained");
+            PP.TotalCurrencyGainedDuringRun += PP.CurrencyToGain;
+            PP.CurrencyToGain = 0;
+        }
+
         MF.Log.Info($"Run ended. Adding {PP.TotalCurrencyGainedDuringRun} to available currency");
         PP.CurrencyGainedLastRunText = PP.TotalCurrencyGainedDuringRun.ToString();
         PP.CurrencyAvailable += PP.TotalCurrencyGainedDuringRun;

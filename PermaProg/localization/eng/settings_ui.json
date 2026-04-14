@@ -1,6 +1,6 @@
 ﻿{
   "PERMAPROG.mod_title": "PermaProg Shop",
-  "PERMAPROG-BALANCING_ENABLED.title": "Enable balancing (recommended on!)",
+  "PERMAPROG-BALANCING_ENABLED.title": "Enable balancing (recommended on)",
   "PERMAPROG-CURRENCY_TEXT.title": "Currency available to spend:",
   "PERMAPROG-CURRENCY_GAINED_LAST_RUN_TEXT.title": "Currency gained last run:",
   "PERMAPROG-START_GOLD_VALUE.title": "Starting gold:",
@@ -10,6 +10,7 @@
   "PERMAPROG-CURRENCY_INTEREST_VALUE.title": "Currency interest:",
   "PERMAPROG-GOLD_GAIN_VALUE.title": "Gold gained after combat:",
   "PERMAPROG-BLOCK_GAIN_VALUE.title": "Block gained at end of turn:",
+  "PERMAPROG-CARD_RARITY_VALUE.title": "Card rarity chance:",
   
   "PERMAPROG-UPGRADE_BUTTON_START_GOLD.title": "Upgrade +20 gold",
   "PERMAPROG-UPGRADE_BUTTON_CURRENCY_GAIN.title": "Upgrade +30 %",
@@ -18,11 +19,14 @@
   "PERMAPROG-UPGRADE_BUTTON_CURRENCY_INTEREST.title": "Upgrade +4 %",
   "PERMAPROG-UPGRADE_BUTTON_GOLD_GAIN.title": "Upgrade +10 %",
   "PERMAPROG-UPGRADE_BUTTON_BLOCK_GAIN.title": "Upgrade +1 block",
+  "PERMAPROG-UPGRADE_BUTTON_CARD_RARITY.title": "Upgrade +20 %",
 
   "PERMAPROG-CURRENCY_INTEREST_VALUE.hover.title": "Currency interest",
   "PERMAPROG-CURRENCY_INTEREST_VALUE.hover.desc": "Gain <X>% interest on saved currency. Only applies if Act 2 is reached during the run",
   "PERMAPROG-GOLD_GAIN_VALUE.hover.title": "Gold gained",
   "PERMAPROG-GOLD_GAIN_VALUE.hover.desc": "Increases the gold reward received after combat by <X>%",
   "PERMAPROG-CARD_UPGRADES_VALUE.hover.title": "Upgraded starting cards",
-  "PERMAPROG-CARD_UPGRADES_VALUE.hover.desc": "Upgrades <X> random cards at the start of the run"
+  "PERMAPROG-CARD_UPGRADES_VALUE.hover.desc": "Upgrades <X> random cards at the start of the run",
+  "PERMAPROG-CARD_RARITY_VALUE.hover.title": "Card rarity chance",
+  "PERMAPROG-CARD_RARITY_VALUE.hover.desc": "Increases odds of receiving more rare cards by <X>% (based on current chance)"
 }

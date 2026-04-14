@@ -1,6 +1,7 @@
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Models.Characters;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Achievements;
 using PermaProg.PermaProgCode.Relics;
 using MegaCrit.Sts2.Core.Commands;
@@ -10,6 +11,7 @@ using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Odds;
 using MegaCrit.Sts2.Core.Runs;
 using BaseLib.Config.UI;
 using Godot.Collections;
@@ -94,19 +96,27 @@ public static class PermaProgPatches {
   [HarmonyPrefix]
   public static void IncreaseGoldRewardDuringRun(ref int min, ref int max, Player player) {
     var balancingMultiplier = PP.BalancingEnabled ? 0.8 : 1.0;
-    min = (int)Math.Round(min * balancingMultiplier * (1 + PP.GoldGainValue / 100));
-    max = (int)Math.Round(max * balancingMultiplier * (1 + PP.GoldGainValue / 100));
+    min = (int)Math.Round(min * balancingMultiplier * (1.0 + PP.GoldGainValue / 100.0));
+    max = (int)Math.Round(max * balancingMultiplier * (1.0 + PP.GoldGainValue / 100.0));
+  }
+
+  [HarmonyPatch(typeof(CardRarityOdds), "GetBaseOdds")]
+  [HarmonyPostfix]
+  public static void IncreaseCardRarityOdds(ref float __result, CardRarityOddsType type, CardRarity rarity) {
+    if (PP.CardRarityValue <= 0.1) return;
+    MF.Log.Info($"Boosting card rarity odds by {(int)PP.CardRarityValue}%");
+    __result *= 1.0f + (float)PP.CardRarityValue / 100.0f;
   }
 
   [HarmonyPatch(typeof(PlayerCmd), "GainGold")]
   [HarmonyPrefix]
   public static void GainCurrencyDuringRun(decimal amount, Player player, bool wasStolenBack) {
-    var currencyGained = (double)amount * (1 + PP.CurrencyGainValue / 100);
+    var currencyGained = (double)amount * (1.0 + PP.CurrencyGainValue / 100.0);
     MF.Log.Info(
-      $"Currency to gain: {(int)currencyGained} from {amount} gold with multiplier {1 + PP.CurrencyGainValue / 100}.");
+      $"Currency to gain: {(int)currencyGained} from {amount} gold with multiplier {1.0 + PP.CurrencyGainValue / 100.0}.");
     PP.CurrencyToGain = (int)currencyGained;
   }
-  
+
   [HarmonyPatch(typeof(SaveManager), "SaveRun")]
   [HarmonyPostfix]
   public static void IncrementTotalCurrencyGained(AbstractRoom? preFinishedRoom, bool saveProgress) {
@@ -117,12 +127,12 @@ public static class PermaProgPatches {
     PP.CurrencyToGain = 0;
     ModConfig.SaveDebounced<PP>();
   }
-  
+
   [HarmonyPatch(typeof(AchievementsHelper), "AfterRunEnded")]
   [HarmonyPrefix]
   public static void SaveDataAtEndOfRun(RunState state, Player player, bool isVictory) {
     if (state.CurrentActIndex >= 2) {
-      var interest = (int)(PP.CurrencyAvailable * (1 + PP.CurrencyInterestValue / 100) - PP.CurrencyAvailable);
+      var interest = (int)(PP.CurrencyAvailable * (1.0 + PP.CurrencyInterestValue / 100.0) - PP.CurrencyAvailable);
       MF.Log.Info($"Gain {interest} in interest");
       PP.CurrencyAvailable += interest;
     }
@@ -219,6 +229,7 @@ internal class PP : SimpleModConfig {
       default:
         optionContainer.AddChild(CreateSectionHeader("Tier 3 upgrades"));
         CreateUpgradeableUi(Upgrades.BlockGain, UpgradeButtonBlockGain);
+        CreateUpgradeableUi(Upgrades.CardRarity, UpgradeButtonCardRarity, true);
         break;
     }
   }
@@ -261,6 +272,9 @@ internal class PP : SimpleModConfig {
 
   public static int BlockGainLevel { get; set; }
   [SliderRange(0.0, 1000.0)] public static double BlockGainValue { get; set; }
+
+  public static int CardRarityLevel { get; set; }
+  [SliderRange(0.0, 1000.0)] public static double CardRarityValue { get; set; }
   //END OF SLIDERS//////////////////////////////////////////////////////////////////////////////////////////////////////
 
   //BUTTONS/////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -296,6 +310,11 @@ internal class PP : SimpleModConfig {
 
   public void UpgradeButtonBlockGain() {
     if (IsLevelUpSuccessful(Upgrades.BlockGain)) BlockGainLevel++;
+    UpdateUi();
+  }
+
+  public void UpgradeButtonCardRarity() {
+    if (IsLevelUpSuccessful(Upgrades.CardRarity)) CardRarityLevel++;
     UpdateUi();
   }
 
@@ -444,6 +463,7 @@ public class UpgDataContainer {
   public readonly Upgradeable CurrencyInterest = new();
   public readonly Upgradeable GoldGain = new();
   public readonly Upgradeable BlockGain = new();
+  public readonly Upgradeable CardRarity = new();
 
   public UpgDataContainer() {
     All.Add(StartGold, nameof(StartGold));
@@ -453,6 +473,7 @@ public class UpgDataContainer {
     All.Add(CurrencyInterest, nameof(CurrencyInterest));
     All.Add(GoldGain, nameof(GoldGain));
     All.Add(BlockGain, nameof(BlockGain));
+    All.Add(CardRarity, nameof(CardRarity));
 
     foreach (var upg in All) {
       upg.Key.SliderName = upg.Value + "Value";
@@ -500,6 +521,12 @@ public class UpgDataContainer {
       BlockGain.MaxLevel = 3;
       BlockGain.Vals = [0, 1, 2, 3];
       BlockGain.UpgCosts = [5000, 15000, 45000];
+    }
+
+    {
+      CardRarity.MaxLevel = 5;
+      CardRarity.Vals = [0, 20, 40, 60, 80, 100];
+      CardRarity.UpgCosts = [5000, 10000, 15000, 20000, 25000];
     }
 
     MF.Log.Info("Running sanity checks");

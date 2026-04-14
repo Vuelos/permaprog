@@ -14,6 +14,7 @@ public class UpgradeableData
     public readonly UpgradeableModel CurrencyInterest = new();
     public readonly UpgradeableModel GoldGain = new();
     public readonly UpgradeableModel BlockGain = new();
+    public readonly UpgradeableModel CardRarity = new();
 
     public UpgradeableData()
     {
@@ -24,6 +25,7 @@ public class UpgradeableData
         All.Add(CurrencyInterest, nameof(CurrencyInterest));
         All.Add(GoldGain, nameof(GoldGain));
         All.Add(BlockGain, nameof(BlockGain));
+        All.Add(CardRarity, nameof(CardRarity));
 
         foreach (var upg in All)
         {
@@ -72,6 +74,12 @@ public class UpgradeableData
             BlockGain.MaxLevel = 3;
             BlockGain.Vals = [0, 1, 2, 3];
             BlockGain.UpgCosts = [5000, 15000, 45000];
+        }
+
+        {
+            CardRarity.MaxLevel = 5;
+            CardRarity.Vals = [0, 20, 40, 60, 80, 100];
+            CardRarity.UpgCosts = [5000, 10000, 15000, 20000, 25000];
         }
 
         MF.Log.Info("Running sanity checks");

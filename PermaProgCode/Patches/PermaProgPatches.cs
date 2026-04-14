@@ -1,10 +1,12 @@
 using MegaCrit.Sts2.Core.Nodes.Screens.GameOverScreen;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Achievements;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Saves;
+using MegaCrit.Sts2.Core.Odds;
 using MegaCrit.Sts2.Core.Runs;
 using BaseLib.Config;
 using HarmonyLib;
@@ -20,17 +22,26 @@ public static class PermaProgPatches
     public static void IncreaseGoldRewardDuringRun(ref int min, ref int max, Player player)
     {
         var balancingMultiplier = PP.BalancingEnabled ? 0.8 : 1.0;
-        min = (int)Math.Round(min * balancingMultiplier * (1 + PP.GoldGainValue / 100));
-        max = (int)Math.Round(max * balancingMultiplier * (1 + PP.GoldGainValue / 100));
+        min = (int)Math.Round(min * balancingMultiplier * (1.0 + PP.GoldGainValue / 100.0));
+        max = (int)Math.Round(max * balancingMultiplier * (1.0 + PP.GoldGainValue / 100.0));
+    }
+
+    [HarmonyPatch(typeof(CardRarityOdds), "GetBaseOdds")]
+    [HarmonyPostfix]
+    public static void IncreaseCardRarityOdds(ref float __result, CardRarityOddsType type, CardRarity rarity)
+    {
+        if (PP.CardRarityValue <= 0.1) return;
+        MF.Log.Info($"Boosting card rarity odds by {(int)PP.CardRarityValue}%");
+        __result *= 1.0f + (float)PP.CardRarityValue / 100.0f;
     }
 
     [HarmonyPatch(typeof(PlayerCmd), "GainGold")]
     [HarmonyPrefix]
     public static void GainCurrencyDuringRun(decimal amount, Player player, bool wasStolenBack)
     {
-        var currencyGained = (double)amount * (1 + PP.CurrencyGainValue / 100);
+        var currencyGained = (double)amount * (1.0 + PP.CurrencyGainValue / 100.0);
         MF.Log.Info($"Currency to gain: {(int)currencyGained} from {amount} gold " +
-                    $"with multiplier {1 + PP.CurrencyGainValue / 100}.");
+                    $"with multiplier {1.0 + PP.CurrencyGainValue / 100.0}.");
         PP.CurrencyToGain = (int)currencyGained;
     }
 
@@ -52,9 +63,10 @@ public static class PermaProgPatches
     {
         if (state.CurrentActIndex >= 2)
         {
-            var interest = (int)(PP.CurrencyAvailable * (1 + PP.CurrencyInterestValue / 100) - PP.CurrencyAvailable);
-            MF.Log.Info($"Gain {interest} in interest");
-            PP.CurrencyAvailable += interest;
+            var interest = (double)PP.CurrencyAvailable;
+            interest *= PP.CurrencyInterestValue / 100.0;
+            MF.Log.Info($"Gain {(int)interest} in interest");
+            PP.CurrencyAvailable += (int)interest;
         }
 
         if (PP.CurrencyToGain > 0)

@@ -82,6 +82,7 @@ internal class PP : SimpleModConfig
             default:
                 optionContainer.AddChild(CreateSectionHeader("Tier 3 upgrades"));
                 CreateUpgradeableUi(Upgrades.BlockGain, UpgradeButtonBlockGain);
+                CreateUpgradeableUi(Upgrades.CardRarity, UpgradeButtonCardRarity, true);
                 break;
         }
     }
@@ -125,6 +126,9 @@ internal class PP : SimpleModConfig
     public static int BlockGainLevel { get; set; }
     [SliderRange(0.0, 1000.0)] public static double BlockGainValue { get; set; }
 
+    public static int CardRarityLevel { get; set; }
+    [SliderRange(0.0, 1000.0)] public static double CardRarityValue { get; set; }
+
     public void UpgradeButtonStartGold()
     {
         if (IsLevelUpSuccessful(Upgrades.StartGold)) StartGoldLevel++;
@@ -167,6 +171,11 @@ internal class PP : SimpleModConfig
         UpdateUi();
     }
 
+    public void UpgradeButtonCardRarity() {
+        if (IsLevelUpSuccessful(Upgrades.CardRarity)) CardRarityLevel++;
+        UpdateUi();
+    }
+
 #if DEBUG
     public void AddGold5000()
     {
@@ -174,6 +183,7 @@ internal class PP : SimpleModConfig
         UpdateUi();
     }
 #endif
+
     private void UpdateUi()
     {
         UpdateCurrentValues();
@@ -222,7 +232,7 @@ internal class PP : SimpleModConfig
             }
             else
             {
-                slider.SetRange(0, maxSliderValue);
+                slider.SetRange(0.0, maxSliderValue);
                 slider.Visible = true;
             }
         }

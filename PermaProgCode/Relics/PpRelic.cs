@@ -18,65 +18,76 @@ using MegaCrit.Sts2.Core.Rooms;
 namespace PermaProg.PermaProgCode.Relics;
 
 [Pool(typeof(SharedRelicPool))]
-// ReSharper disable once ClassNeverInstantiated.Global
-public sealed class PpRelic : CustomRelicModel {
-  private bool ShouldTrigger { get; set; }
+public sealed class PpRelic : CustomRelicModel
+{
+    private bool ShouldTrigger { get; set; }
 
-  public override RelicRarity Rarity => RelicRarity.Starter;
+    public override RelicRarity Rarity => RelicRarity.Starter;
 
-  protected override IEnumerable<DynamicVar> CanonicalVars => [new BlockVar(1M, ValueProp.Unpowered)];
+    protected override IEnumerable<DynamicVar> CanonicalVars => [new BlockVar(1M, ValueProp.Unpowered)];
 
 #if DEBUG
-  public override async Task AfterRoomEntered(AbstractRoom room) {
-    if (room is not CombatRoom) return;
-    Flash();
-    await PowerCmd.Apply<StrengthPower>(Owner.Creature, 999M, Owner.Creature, null);
-  }
+    public override async Task AfterRoomEntered(AbstractRoom room)
+    {
+        if (room is not CombatRoom) return;
+        Flash();
+        await PowerCmd.Apply<StrengthPower>(Owner.Creature, 999M, Owner.Creature, null);
+    }
 #endif
 
-  public override Task BeforeTurnEndVeryEarly(PlayerChoiceContext choiceContext, CombatSide side) {
-    if (side != Owner.Creature.Side)
-      return Task.CompletedTask;
-    ShouldTrigger = true;
-    return Task.CompletedTask;
-  }
-
-  public override async Task BeforeTurnEnd(PlayerChoiceContext choiceContext, CombatSide side) {
-    if (!ShouldTrigger)
-      return;
-    ShouldTrigger = false;
-    if (PP.BlockGainValue > 0) {
-      Flash();
-      var blockAmount = new BlockVar((decimal)PP.BlockGainValue, ValueProp.Unpowered);
-      await CreatureCmd.GainBlock(Owner.Creature, blockAmount, null);
+    public override Task BeforeTurnEndVeryEarly(PlayerChoiceContext choiceContext, CombatSide side)
+    {
+        if (side != Owner.Creature.Side)
+            return Task.CompletedTask;
+        ShouldTrigger = true;
+        return Task.CompletedTask;
     }
-  }
 
-  public override Task BeforeSideTurnStart(PlayerChoiceContext choiceContext, CombatSide side,
-    CombatState combatState) {
-    ShouldTrigger = false;
-    return Task.CompletedTask;
-  }
-
-  //PermaProg/images/relics
-  public override string PackedIconPath {
-    get {
-      var path = $"{Id.Entry.RemovePrefix().ToLowerInvariant()}.png".RelicImagePath();
-      return ResourceLoader.Exists(path) ? path : "pp_relic.png".RelicImagePath();
+    public override async Task BeforeTurnEnd(PlayerChoiceContext choiceContext, CombatSide side)
+    {
+        if (!ShouldTrigger)
+            return;
+        ShouldTrigger = false;
+        if (PP.BlockGainValue > 0)
+        {
+            Flash();
+            var blockAmount = new BlockVar((decimal)PP.BlockGainValue, ValueProp.Unpowered);
+            await CreatureCmd.GainBlock(Owner.Creature, blockAmount, null);
+        }
     }
-  }
 
-  protected override string PackedIconOutlinePath {
-    get {
-      var path = $"{Id.Entry.RemovePrefix().ToLowerInvariant()}_outline.png".RelicImagePath();
-      return ResourceLoader.Exists(path) ? path : "pp_relic_outline.png".RelicImagePath();
+    public override Task BeforeSideTurnStart(PlayerChoiceContext choiceContext, CombatSide side,
+        CombatState combatState)
+    {
+        ShouldTrigger = false;
+        return Task.CompletedTask;
     }
-  }
 
-  protected override string BigIconPath {
-    get {
-      var path = $"{Id.Entry.RemovePrefix().ToLowerInvariant()}.png".BigRelicImagePath();
-      return ResourceLoader.Exists(path) ? path : "pp_relic_big.png".BigRelicImagePath();
+    //PermaProg/images/relics
+    public override string PackedIconPath
+    {
+        get
+        {
+            var path = $"{Id.Entry.RemovePrefix().ToLowerInvariant()}.png".RelicImagePath();
+            return ResourceLoader.Exists(path) ? path : "pp_relic.png".RelicImagePath();
+        }
     }
-  }
+
+    protected override string PackedIconOutlinePath
+    {
+        get
+        {
+            var path = $"{Id.Entry.RemovePrefix().ToLowerInvariant()}_outline.png".RelicImagePath();
+            return ResourceLoader.Exists(path) ? path : "pp_relic_outline.png".RelicImagePath();
+        }
+    }
+
+    protected override string BigIconPath
+    {
+        get
+        {
+            var path = $"{Id.Entry.RemovePrefix().ToLowerInvariant()}.png".BigRelicImagePath();
+            return ResourceLoader.Exists(path) ? path : "pp_relic_big.png".BigRelicImagePath();
+        }
+    }
 }

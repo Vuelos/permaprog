@@ -10,8 +10,7 @@
   "PERMAPROG-CURRENCY_INTEREST_VALUE.title": "Currency interest:",
   "PERMAPROG-GOLD_GAIN_VALUE.title": "Gold gained after combat:",
   "PERMAPROG-BLOCK_GAIN_VALUE.title": "Block gained at end of turn:",
-  "PERMAPROG-CARD_RARITY_VALUE.title": "Card rarity chance:",
-  
+
   "PERMAPROG-UPGRADE_BUTTON_START_GOLD.title": "Upgrade +20 gold",
   "PERMAPROG-UPGRADE_BUTTON_CURRENCY_GAIN.title": "Upgrade +30 %",
   "PERMAPROG-UPGRADE_BUTTON_MAX_HEALTH.title": "Upgrade +2 hp",

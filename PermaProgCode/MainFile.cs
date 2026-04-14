@@ -35,6 +35,7 @@ public partial class MF : Node {
   }
 }
 
+// Current earliest entrypoint to run, do start-of-run things here
 [HarmonyPatch]
 public static class PermaProgPatches {
   [HarmonyPatch(typeof(Player), "PopulateStartingDeck")]
@@ -128,6 +129,7 @@ public static class PermaProgPatches {
     }
 
     MF.Log.Info($"Adding {PP.TotalCurrencyGainedDuringRun} to available currency");
+    PP.CurrencyGainedLastRunText = PP.TotalCurrencyGainedDuringRun.ToString();
     PP.CurrencyAvailable += PP.TotalCurrencyGainedDuringRun;
     ModConfig.SaveDebounced<PP>();
   }
@@ -314,7 +316,6 @@ internal class PP : SimpleModConfig {
     var headerRow = _optionContainer?.GetNode<NConfigOptionRow>("CurrencyText");
     if (headerRow?.SettingControl is NConfigLineEdit header) header.Text = CurrencyText;
 
-    CurrencyGainedLastRunText = TotalCurrencyGainedDuringRun.ToString();
     var headerRow2 = _optionContainer?.GetNode<NConfigOptionRow>("CurrencyGainedLastRunText");
     if (headerRow2?.SettingControl is NConfigLineEdit header2) header2.Text = CurrencyGainedLastRunText;
   }
@@ -485,13 +486,15 @@ public class UpgDataContainer {
       BlockGain.UpgCosts = [5000, 15000, 45000];
     }
 
-    // Sanity check
+    MF.Log.Info("Running sanity checks");
     foreach (var upg in All.Keys.Where(upg =>
                upg.Vals.Count != upg.MaxLevel + 1 || upg.UpgCosts.Count != upg.MaxLevel)) {
-      GD.Print("This one :( -> ", upg.CurrentLevelName);
-      GD.Print("MaxLevel, Vals, UpgCosts: " + upg.MaxLevel + " ", +upg.Vals.Count + " ", +upg.UpgCosts.Count);
+      MF.Log.Info($"This one is invalid -> {upg.CurrentLevelName}");
+      MF.Log.Info($"MaxLevel: {upg.MaxLevel} Vals: {upg.Vals.Count} UpgCosts: {upg.UpgCosts.Count}");
       throw new InvalidOperationException();
     }
+
+    MF.Log.Info("Sanity checks OK");
   }
 }
 //END OF UPGRADE DATA///////////////////////////////////////////////////////////////////////////////////////////////////
